@@ -1,0 +1,63 @@
+{
+  "name": "@your-org/agency",
+  "version": "0.1.0",
+  "description": "Translate LLM message formats between providers (Anthropic ↔ OpenAI)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "pnpm clean && pnpm build",
+    "publish:github": "npm publish"
+  },
+  "keywords": [
+    "llm",
+    "ai",
+    "anthropic",
+    "openai",
+    "claude",
+    "gpt",
+    "message-translation",
+    "tool-calling"
+  ],
+  "author": "Agency Contributors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-org/agency.git"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@changesets/cli": "^2.27.9",
+    "@types/node": "^22.9.0",
+    "@vitest/coverage-v8": "^2.1.5",
+    "tsup": "^8.3.5",
+    "typescript": "^5.8.3",
+    "vitest": "^2.1.5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "pnpm@10.11.0"
+}

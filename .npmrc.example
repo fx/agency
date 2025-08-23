@@ -1,0 +1,5 @@
+# Example .npmrc for GitHub Packages
+# Copy this to .npmrc and replace YOUR_ORG and YOUR_TOKEN
+
+@your-org:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=YOUR_PERSONAL_ACCESS_TOKEN
