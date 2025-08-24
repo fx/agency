@@ -50,6 +50,7 @@
     "url": "git+https://github.com/your-org/agency.git"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.32.1",
     "@biomejs/biome": "1.9.4",
     "@changesets/cli": "^2.27.9",
     "@types/node": "^22.9.0",

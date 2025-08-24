@@ -1,46 +1,50 @@
 /**
- * Anthropic Claude API message format types
+ * Anthropic Claude API message format types using official SDK
+ * 
+ * This file imports types from the official @anthropic-ai/sdk and provides
+ * compatibility aliases to maintain backward compatibility.
  */
 
+// Import types from the official Anthropic SDK
+import type {
+  Message,
+  MessageParam,
+  ContentBlock,
+  TextBlock,
+  TextBlockParam,
+  ImageBlockParam,
+  ToolUseBlock,
+  ToolUseBlockParam,
+  ToolResultBlockParam,
+  Tool,
+  ToolChoice,
+  MessageCreateParams,
+  Usage,
+} from "@anthropic-ai/sdk/resources/messages.js";
+
+// Define our own message structure to match our usage patterns
 export interface AnthropicMessage {
   role: "user" | "assistant";
   content: AnthropicContent[];
 }
 
-export type AnthropicContent =
-  | AnthropicTextContent
-  | AnthropicToolUseContent
+// Union of all possible content types we use
+export type AnthropicContent = 
+  | AnthropicTextContent 
+  | AnthropicToolUseContent 
   | AnthropicToolResultContent;
 
-export interface AnthropicTextContent {
-  type: "text";
-  text: string;
+// Re-export SDK types with original names for compatibility
+export type AnthropicTextContent = TextBlock;
+export type AnthropicToolUseContent = ToolUseBlock;
+export type AnthropicToolResultContent = ToolResultBlockParam;
+
+// Tool type with required description (our API expects it)
+export interface AnthropicTool extends Omit<Tool, 'description'> {
+  description: string; // Make description required
 }
 
-export interface AnthropicToolUseContent {
-  type: "tool_use";
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-}
-
-export interface AnthropicToolResultContent {
-  type: "tool_result";
-  tool_use_id: string;
-  content?: string;
-  is_error?: boolean;
-}
-
-export interface AnthropicTool {
-  name: string;
-  description: string;
-  input_schema: {
-    type: "object";
-    properties: Record<string, unknown>;
-    required?: string[];
-  };
-}
-
+// Request type based on MessageCreateParams but matching our structure
 export interface AnthropicRequest {
   model: string;
   messages: AnthropicMessage[];
@@ -50,6 +54,7 @@ export interface AnthropicRequest {
   system?: string;
 }
 
+// Response type based on SDK Message
 export interface AnthropicResponse {
   id: string;
   type: "message";

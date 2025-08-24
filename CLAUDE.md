@@ -40,14 +40,14 @@ Agency is a TypeScript library that translates LLM message formats between AI pr
 - `src/providers/` - Format conversion logic
   - `anthropic.ts` - Anthropic ↔ OpenAI conversion functions
   - `openai.ts` - Wrapper functions (delegates to anthropic.ts)
-- `src/types/` - TypeScript definitions for both providers
+- `src/types/` - TypeScript definitions (uses official @anthropic-ai/sdk types for Anthropic)
 - `src/core/` - Utilities and error handling
 
 ### Key Design Patterns
 - **Provider symmetry**: Both providers expose identical APIs (`toAnthropic`/`toOpenAI`, `toolsToAnthropic`/`toolsToOpenAI`)
 - **Delegation pattern**: OpenAI provider delegates to Anthropic provider for actual conversion logic
 - **Error handling**: Custom error classes (`ValidationError`, `TransformError`) with provider context
-- **Type safety**: Full TypeScript definitions for both OpenAI and Anthropic message formats
+- **Type safety**: Full TypeScript definitions for both providers (official @anthropic-ai/sdk types for Anthropic)
 
 ### Message Translation Flow
 1. **OpenAI → Anthropic**: `openai.toAnthropic()` → `anthropic.fromOpenAI()`
