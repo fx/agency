@@ -161,7 +161,11 @@ export function toolsFromOpenAI(tools: OpenAITool[]): AnthropicTool[] {
   return tools.map((tool) => ({
     name: tool.function.name,
     description: tool.function.description,
-    input_schema: tool.function.parameters,
+    input_schema: {
+      type: "object" as const,
+      properties: tool.function.parameters.properties,
+      required: tool.function.parameters.required,
+    },
   }));
 }
 
@@ -174,7 +178,11 @@ export function toolsToOpenAI(tools: AnthropicTool[]): OpenAITool[] {
     function: {
       name: tool.name,
       description: tool.description,
-      parameters: tool.input_schema,
+      parameters: {
+        type: "object" as const,
+        properties: (tool.input_schema.properties as Record<string, unknown>) || {},
+        required: (tool.input_schema.required as string[]) || undefined,
+      },
     },
   }));
 }
