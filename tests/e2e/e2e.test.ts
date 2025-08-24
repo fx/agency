@@ -61,11 +61,32 @@ describe("E2E Agent Execution Chains", () => {
       });
     }, 45000);
 
-    it.skip("should successfully read test.txt file through Vercel AI Gateway", async () => {
-      // Skip for now - need to investigate Vercel AI Gateway integration
+    it("should successfully read test.txt file through Vercel AI Gateway", async () => {
       const scenario = new ReadFileScenario();
+      
       const log = await runner.runScenario(scenario, "vercel");
+      
+      // Should succeed and make tool calls through OpenAI-compatible format
+      expect(log.success).toBe(true);
       expect(log.calls.length).toBeGreaterThan(0);
+      
+      // Verify tool calling through Vercel Gateway (OpenAI format)
+      const response = log.calls[log.calls.length - 1].response;
+      expect(response).toMatchObject({
+        choices: expect.arrayContaining([
+          expect.objectContaining({
+            message: expect.objectContaining({
+              tool_calls: expect.arrayContaining([
+                expect.objectContaining({
+                  function: expect.objectContaining({
+                    name: expect.stringMatching(/read/i)
+                  })
+                })
+              ])
+            })
+          })
+        ])
+      });
     }, 45000);
 
     it("should complete initial tool request with structured logging", async () => {

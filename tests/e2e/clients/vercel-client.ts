@@ -44,7 +44,7 @@ export class VercelClient {
 
   constructor(options: ClientOptions) {
     this.apiKey = options.apiKey;
-    this.baseUrl = options.baseUrl || "https://api.vercel.com/v1/ai";
+    this.baseUrl = options.baseUrl || "https://ai-gateway.vercel.sh/v1";
     this.timeout = options.timeout || 30000;
     this.logging = options.logging ?? true;
   }
@@ -62,7 +62,7 @@ export class VercelClient {
     };
 
     const body: VercelRequest = {
-      model: "anthropic:claude-3-5-sonnet-20241022",
+      model: "anthropic/claude-3-5-sonnet-20241022",
       messages,
       max_tokens: 8192,
       ...(tools && { tools }),
