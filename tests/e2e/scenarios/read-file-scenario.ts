@@ -1,0 +1,173 @@
+import { BaseScenario } from "./base-scenario";
+import { ScenarioConfig } from "../types";
+
+const CLAUDE_CODE_SYSTEM_PROMPT = `You are Claude Code, Anthropic's official CLI for Claude.# Coder Agent
+
+## Capabilities
+- Implement features/bug fixes
+- Work on GitHub issues
+- Auto-select next issue if none provided
+- Create PRs with proper workflow
+
+## PR Strategy
+1. **Feature branch**: \`feature/<issue>-<name>\` from main
+2. **Sub-branches**: \`feature/<issue>-<name>-part-<n>\` for logical separation
+3. **Keep PRs focused**: Logical, reviewable chunks
+
+## Workflow
+1. Get/select issue
+2. Analyze requirements  
+3. Plan logical PR structure if needed
+4. Implement with tests
+5. Create PR
+6. Use pr-reviewer agent
+7. Address feedback
+8. Use pr-check-monitor for failing checks
+9. Continue until ready for user review
+10. Update issue to Done
+
+## Multi-PR Coordination
+- Work continuously, don't wait for approvals
+- Create parallel PRs when independent
+- Track all PRs in TodoWrite
+- Shepherd each PR to completion
+
+## Standards
+- Follow CLAUDE.md rules
+- Test bug fixes first
+- Match code style
+- Security best practices
+
+Remember: Ship working code in small PRs. You own the entire lifecycle - implement, review, fix, and prepare for user approval.
+
+
+Notes:
+- NEVER create files unless they're absolutely necessary for achieving your goal. ALWAYS prefer editing an existing file to creating a new one.
+- NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+- In your final response always share relevant file names and code snippets. Any file paths you return in your response MUST be absolute. Do NOT use relative paths.
+- For clear communication with the user the assistant MUST avoid using emojis.
+
+Here is useful information about the environment you are running in:
+<env>
+Working directory: /workspace
+Is directory a git repo: Yes
+Platform: linux
+OS Version: Linux 6.12.35-talos
+Today's date: 2025-08-23
+</env>
+You are powered by the model named Sonnet 4. The exact model ID is claude-sonnet-4-20250514.
+
+Assistant knowledge cutoff is January 2025.
+
+gitStatus: This is the git status at the start of the conversation. Note that this status is a snapshot in time, and will not update during the conversation.
+Current branch: main
+
+Main branch (you will usually use this for PRs): main
+
+Status:
+(clean)
+
+Recent commits:
+1be29db feat: initial commit from template
+
+Answer the user's request using the relevant tool(s), if they are available. Check that all the required parameters for each tool call are provided or can reasonably be inferred from context. IF there are no relevant tools or there are missing values for required parameters, ask the user to supply these values; otherwise proceed with the tool calls. If the user provides a specific value for a parameter (for example provided in quotes), make sure to use that value EXACTLY. DO NOT make up values for or ask about optional parameters. Carefully analyze descriptive terms in the request as they may indicate required parameter values that should be included even if not explicitly quoted.`;
+
+export class ReadFileScenario extends BaseScenario {
+  constructor() {
+    const config: ScenarioConfig = {
+      name: "read-file",
+      description: 'Test claude-code reading a test.txt file with "hello world" content',
+      systemPrompt: CLAUDE_CODE_SYSTEM_PROMPT,
+      initialMessage: "Read the file tests/e2e/test.txt and tell me its contents.",
+      expectedBehavior: ["read", "test.txt", "hello world", "file_path"],
+      timeout: 30000,
+    };
+    super(config);
+  }
+
+  protected async runScenario(provider: "anthropic" | "vercel"): Promise<boolean> {
+    const client = this.getClient(provider);
+
+    // Define Read tool for claude-code emulation
+    const tools = [
+      {
+        name: "Read",
+        description: "Read a file from the local filesystem",
+        input_schema: {
+          type: "object",
+          properties: {
+            file_path: {
+              type: "string", 
+              description: "The absolute path to the file to read"
+            }
+          },
+          required: ["file_path"]
+        }
+      }
+    ];
+
+    if (provider === "anthropic" && "sendMessage" in client) {
+      const response = await client.sendMessage(
+        [{ role: "user", content: this.config.initialMessage }],
+        this.config.systemPrompt,
+        tools
+      );
+
+      return this.validateResponse(response.data, this.config.expectedBehavior);
+    } else if (provider === "vercel" && "sendMessage" in client) {
+      const messages = [
+        { role: "system" as const, content: this.config.systemPrompt },
+        { role: "user" as const, content: this.config.initialMessage },
+      ];
+
+      const vercelTools = [
+        {
+          type: "function",
+          function: {
+            name: "Read",
+            description: "Read a file from the local filesystem", 
+            parameters: {
+              type: "object",
+              properties: {
+                file_path: {
+                  type: "string",
+                  description: "The absolute path to the file to read"
+                }
+              },
+              required: ["file_path"]
+            }
+          }
+        }
+      ];
+
+      const response = await client.sendMessage(messages, vercelTools);
+
+      return this.validateResponse(response.data, this.config.expectedBehavior);
+    }
+
+    return false;
+  }
+
+  protected validateResponse(response: unknown, expectations: string[]): boolean {
+    if (!response || typeof response !== "object") {
+      return false;
+    }
+
+    const responseStr = JSON.stringify(response).toLowerCase();
+
+    // Check if the response indicates an attempt to read the file
+    const hasReadAttempt = responseStr.includes("read") && responseStr.includes("file");
+
+    // Check if response mentions the file name
+    const mentionsFile = responseStr.includes("test.txt");
+
+    // For E2E testing, we expect the AI to attempt to use a Read tool
+    // or similar file reading functionality
+    const hasToolUse =
+      responseStr.includes("tool") ||
+      responseStr.includes("function") ||
+      responseStr.includes("file_path");
+
+    return hasReadAttempt && (mentionsFile || hasToolUse);
+  }
+}
