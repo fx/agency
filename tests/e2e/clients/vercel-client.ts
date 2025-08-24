@@ -36,6 +36,14 @@ interface VercelResponse {
   };
 }
 
+interface VercelErrorResponse {
+  error: {
+    message?: string;
+    type?: string;
+    code?: string;
+  } | string;
+}
+
 export class VercelClient {
   private apiKey: string;
   private baseUrl: string;
@@ -76,12 +84,20 @@ export class VercelClient {
         signal: AbortSignal.timeout(this.timeout),
       });
 
-      const responseData = (await response.json()) as VercelResponse | { error: any };
+      const responseData = (await response.json()) as VercelResponse | VercelErrorResponse;
       const duration = Date.now() - startTime;
 
       // Check if response contains an error (even with 2xx status)
       if ("error" in responseData) {
-        const errorMessage = responseData.error?.message || responseData.error?.toString() || "API Error";
+        const errorObj = responseData.error;
+        let errorMessage: string;
+        if (typeof errorObj === "object" && errorObj !== null && "message" in errorObj && typeof errorObj.message === "string") {
+          errorMessage = errorObj.message;
+        } else if (typeof errorObj === "string") {
+          errorMessage = errorObj;
+        } else {
+          errorMessage = "API Error";
+        }
         
         if (this.logging) {
           logger.logApiCall({

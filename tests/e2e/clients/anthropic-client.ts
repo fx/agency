@@ -31,6 +31,14 @@ interface AnthropicResponse {
   };
 }
 
+interface AnthropicErrorResponse {
+  type: "error";
+  error: {
+    message?: string;
+    type?: string;
+  };
+}
+
 export class AnthropicClient {
   private apiKey: string;
   private baseUrl: string;
@@ -74,11 +82,13 @@ export class AnthropicClient {
         signal: AbortSignal.timeout(this.timeout),
       });
 
-      const responseData = (await response.json()) as AnthropicResponse | { type: "error"; error: any };
+      const responseData = (await response.json()) as AnthropicResponse | AnthropicErrorResponse;
       const duration = Date.now() - startTime;
 
       // Check if response contains an error (even with 200 status)
       if ("type" in responseData && responseData.type === "error") {
+        const errorMessage = responseData.error.message || "API Error";
+        
         if (this.logging) {
           logger.logApiCall({
             provider: "anthropic",
@@ -87,12 +97,12 @@ export class AnthropicClient {
             headers: this.sanitizeHeaders(headers),
             body,
             response: responseData,
-            error: responseData.error.message || "API Error",
+            error: errorMessage,
             duration,
           });
         }
 
-        throw new Error(responseData.error.message || "API Error");
+        throw new Error(errorMessage);
       }
 
       if (this.logging) {
