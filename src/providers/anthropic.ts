@@ -180,8 +180,8 @@ export function toolsToOpenAI(tools: AnthropicTool[]): OpenAITool[] {
       description: tool.description,
       parameters: {
         type: "object" as const,
-        properties: (tool.input_schema.properties as Record<string, unknown>) || {},
-        required: (tool.input_schema.required as string[]) || undefined,
+        properties: tool.input_schema.properties,
+        required: tool.input_schema.required,
       },
     },
   }));
