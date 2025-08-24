@@ -29,7 +29,9 @@
     "format": "biome format --write .",
     "clean": "rm -rf dist",
     "prepublishOnly": "pnpm clean && pnpm build",
-    "publish:github": "npm publish"
+    "publish:github": "npm publish",
+    "test:e2e": "vitest --config vitest.e2e.config.ts",
+    "test:e2e:demo": "tsx tests/e2e/demo.ts"
   },
   "keywords": [
     "llm",
@@ -52,6 +54,7 @@
     "@changesets/cli": "^2.27.9",
     "@types/node": "^22.9.0",
     "@vitest/coverage-v8": "^2.1.5",
+    "dotenv": "^17.2.1",
     "tsup": "^8.3.5",
     "typescript": "^5.8.3",
     "vitest": "^2.1.5"
