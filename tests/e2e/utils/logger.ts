@@ -3,6 +3,7 @@ import { ApiCall, ExecutionLog } from "../types";
 export class E2ELogger {
   private logs: ExecutionLog[] = [];
   private currentSession: ExecutionLog | null = null;
+  private verboseLogging = false;
 
   startSession(sessionId: string, scenario: string): void {
     this.currentSession = {
@@ -27,7 +28,7 @@ export class E2ELogger {
     this.currentSession.calls.push(apiCall);
   }
 
-  endSession(success: boolean, error?: string): ExecutionLog | null {
+  endSession(success: boolean, error?: string, finalResponse?: string): ExecutionLog | null {
     if (!this.currentSession) {
       return null;
     }
@@ -36,6 +37,9 @@ export class E2ELogger {
     this.currentSession.success = success;
     if (error) {
       this.currentSession.error = error;
+    }
+    if (finalResponse) {
+      this.currentSession.finalResponse = finalResponse;
     }
 
     this.logs.push(this.currentSession);
@@ -52,8 +56,47 @@ export class E2ELogger {
     return this.logs[this.logs.length - 1] || null;
   }
 
+  setVerboseLogging(verbose: boolean): void {
+    this.verboseLogging = verbose;
+  }
+
   exportLogs(): string {
-    return JSON.stringify(this.logs, null, 2);
+    if (this.verboseLogging) {
+      return JSON.stringify(this.logs, null, 2);
+    }
+    return this.formatHumanReadable();
+  }
+
+  private formatHumanReadable(): string {
+    return this.logs.map(log => this.formatLogSummary(log)).join('\n');
+  }
+
+  private formatLogSummary(log: ExecutionLog): string {
+    const duration = log.endTime 
+      ? new Date(log.endTime).getTime() - new Date(log.startTime).getTime()
+      : 0;
+    
+    const status = log.success ? '✅' : '❌';
+    const calls = log.calls.length;
+    const providers = [...new Set(log.calls.map(c => c.provider))].join(', ');
+    
+    let summary = `${status} ${log.scenario} (${duration}ms, ${calls} calls`;
+    if (providers) {
+      summary += `, ${providers}`;
+    }
+    summary += ')';
+    
+    if (log.error) {
+      summary += ` - Error: ${log.error}`;
+    } else if (log.finalResponse) {
+      // Truncate long responses to keep summary readable
+      const truncated = log.finalResponse.length > 100 
+        ? log.finalResponse.substring(0, 100) + '...' 
+        : log.finalResponse;
+      summary += ` - Response: ${truncated}`;
+    }
+    
+    return summary;
   }
 
   clear(): void {

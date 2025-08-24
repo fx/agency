@@ -5,13 +5,16 @@ import { ReadFileScenario } from "./scenarios/read-file-scenario";
 import { LogAnalyzer } from "./utils/log-analyzer";
 import { logger } from "./utils/logger";
 
+// Check for verbose logging CLI argument
+const isVerbose = process.argv.includes('--verbose') || process.env.VERBOSE === 'true';
+
 // Demo with mock API responses to show framework functionality
 async function runDemo() {
   console.log("🚀 E2E Agent Framework Demo\n");
 
   // Create mock scenario that doesn't require real API calls
   class MockReadFileScenario extends ReadFileScenario {
-    protected async runScenario(provider: "anthropic" | "vercel"): Promise<boolean> {
+    protected async runScenario(provider: "anthropic" | "vercel"): Promise<{success: boolean, finalResponse?: string}> {
       // Simulate API call logging
       logger.logApiCall({
         provider,
@@ -47,10 +50,16 @@ async function runDemo() {
         duration: 150 + Math.random() * 100,
       });
 
-      // Mock successful response validation
-      return true;
+      // Mock successful response validation with final response
+      const finalResponse = provider === "anthropic" 
+        ? "I'll help you read that file. | Tool: Read({\"file_path\":\"/workspace/test.txt\"})"
+        : "Tool: Read({\"file_path\":\"/workspace/test.txt\"})";
+      return { success: true, finalResponse };
     }
   }
+
+  // Configure logging format
+  logger.setVerboseLogging(isVerbose);
 
   const runner = new ScenarioRunner({
     // No real API keys needed for demo
@@ -91,10 +100,14 @@ async function runDemo() {
 
     console.log(report);
 
-    console.log("\n💾 Raw execution logs:");
+    console.log(isVerbose ? "\n💾 Raw execution logs:" : "\n📋 Execution summary:");
     console.log("=====================================");
-    const structuredExport = LogAnalyzer.exportStructuredLogs(logs);
-    console.log(JSON.stringify(structuredExport.summary, null, 2));
+    if (isVerbose) {
+      const structuredExport = LogAnalyzer.exportStructuredLogs(logs);
+      console.log(JSON.stringify(structuredExport.summary, null, 2));
+    } else {
+      console.log(logger.exportLogs());
+    }
 
     console.log("\n🎯 Framework capabilities demonstrated:");
     console.log("- ✅ Modular scenario system");

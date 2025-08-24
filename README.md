@@ -105,6 +105,50 @@ const anthropic = agency.openai.toAnthropic(openaiWithTools);
 // Converts tool_calls to tool_use format automatically
 ```
 
+## Development
+
+### Testing
+
+Run the test suite:
+```bash
+npm test                    # Unit tests
+npm run test:coverage      # With coverage report
+```
+
+### E2E Testing
+
+The project includes end-to-end tests that validate message translation with real API calls to both Anthropic and Vercel AI Gateway:
+
+```bash
+# Run E2E tests (requires API keys in .env.local)
+npm run test:e2e
+
+# Verbose output with full JSON logs
+npm run test:e2e -- --verbose
+# OR
+VERBOSE=true npm run test:e2e
+
+# Run specific E2E test
+npm run test:e2e -- -t "Vercel AI Gateway"
+```
+
+**E2E Test Output Formats:**
+
+- **Default (human-readable)**: `✅ read-file (2824ms, 2 calls, vercel) - Response: The contents of /workspace/tests/e2e/test.txt is: hello world`
+- **Verbose (full JSON)**: Complete API request/response details for debugging
+
+**Required Environment Variables** (`.env.local`):
+```bash
+ANTHROPIC_API_KEY=sk-ant-api03-...
+VERCEL_API_KEY=vck_...
+```
+
+The E2E tests validate:
+- Message format translation between Anthropic and OpenAI formats
+- Tool calling compatibility through Vercel AI Gateway
+- Complete conversation flows with tool execution
+- Error handling and rate limiting
+
 ## License
 
 MIT

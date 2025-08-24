@@ -18,6 +18,7 @@ export interface ExecutionLog {
   calls: ApiCall[];
   success: boolean;
   error?: string;
+  finalResponse?: string;
 }
 
 export interface ScenarioConfig {

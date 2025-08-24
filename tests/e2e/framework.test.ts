@@ -22,7 +22,7 @@ class MockScenario extends BaseScenario {
     this.shouldSucceed = shouldSucceed;
   }
 
-  protected async runScenario(provider: "anthropic" | "vercel"): Promise<boolean> {
+  protected async runScenario(provider: "anthropic" | "vercel"): Promise<{success: boolean, finalResponse?: string}> {
     // Add small delay to simulate API call
     await new Promise((resolve) => setTimeout(resolve, 10));
 
@@ -38,7 +38,8 @@ class MockScenario extends BaseScenario {
       duration: 100 + Math.random() * 50,
     });
 
-    return this.shouldSucceed;
+    const finalResponse = this.shouldSucceed ? "Mock successful response" : undefined;
+    return { success: this.shouldSucceed, finalResponse };
   }
 }
 

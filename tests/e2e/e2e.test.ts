@@ -7,6 +7,9 @@ import { logger } from "./utils/logger";
 // Load environment variables from .env.local
 config({ path: ".env.local" });
 
+// Check for verbose logging CLI argument
+const isVerbose = process.argv.includes('--verbose') || process.env.VERBOSE === 'true';
+
 // API Keys from environment variables (required for E2E tests)
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const VERCEL_API_KEY = process.env.VERCEL_API_KEY;
@@ -23,6 +26,7 @@ describe("E2E Agent Execution Chains", () => {
     }
 
     logger.clear();
+    logger.setVerboseLogging(isVerbose);
     runner = new ScenarioRunner({
       anthropicApiKey: ANTHROPIC_API_KEY,
       vercelApiKey: VERCEL_API_KEY,
@@ -34,7 +38,7 @@ describe("E2E Agent Execution Chains", () => {
     // Log execution results for debugging
     const logs = logger.getLogs();
     if (logs.length > 0) {
-      console.log("\\nExecution Logs:");
+      console.log(isVerbose ? "\\nExecution Logs (Full JSON):" : "\\nExecution Summary:");
       console.log(logger.exportLogs());
     }
   });
@@ -49,9 +53,15 @@ describe("E2E Agent Execution Chains", () => {
       expect(log.success).toBe(true);
       expect(log.calls.length).toBeGreaterThan(0);
 
-      // Verify Claude attempted to use a Read tool
-      const response = log.calls[log.calls.length - 1].response;
-      expect(response).toMatchObject({
+      // Verify Claude successfully completed the read operation
+      // The final response should contain the file contents
+      const finalResponse = log.calls[log.calls.length - 1].response;
+      const finalResponseStr = JSON.stringify(finalResponse).toLowerCase();
+      expect(finalResponseStr).toContain("hello world");
+
+      // The first response should contain the tool use
+      const firstResponse = log.calls[0].response;
+      expect(firstResponse).toMatchObject({
         content: expect.arrayContaining([
           expect.objectContaining({
             type: "tool_use", 
@@ -70,9 +80,15 @@ describe("E2E Agent Execution Chains", () => {
       expect(log.success).toBe(true);
       expect(log.calls.length).toBeGreaterThan(0);
       
-      // Verify tool calling through Vercel Gateway (OpenAI format)
-      const response = log.calls[log.calls.length - 1].response;
-      expect(response).toMatchObject({
+      // Verify successful file reading through Vercel Gateway
+      // The final response should contain the file contents
+      const finalResponse = log.calls[log.calls.length - 1].response;
+      const finalResponseStr = JSON.stringify(finalResponse).toLowerCase();
+      expect(finalResponseStr).toContain("hello world");
+
+      // The first response should contain the tool calls (OpenAI format)
+      const firstResponse = log.calls[0].response;
+      expect(firstResponse).toMatchObject({
         choices: expect.arrayContaining([
           expect.objectContaining({
             message: expect.objectContaining({
@@ -94,9 +110,9 @@ describe("E2E Agent Execution Chains", () => {
 
       const log = await runner.runScenario(scenario, "anthropic");
 
-      // Should successfully request the Read tool
+      // Should successfully complete the full conversation flow
       expect(log.success).toBe(true);
-      expect(log.calls.length).toBe(1); // Currently only makes initial request
+      expect(log.calls.length).toBe(2); // Initial request + final response after tool execution
 
       // Verify logging structure  
       expect(log.sessionId).toMatch(/read-file-\d+/);
@@ -109,7 +125,7 @@ describe("E2E Agent Execution Chains", () => {
       expect(call.url).toBe("https://api.anthropic.com/v1/messages");
       expect(call.headers["x-api-key"]).toMatch(/^sk-ant-a\.\.\./);
 
-      // Response should contain tool_use request
+      // First call response should contain tool_use request
       expect(call.response).toMatchObject({
         content: expect.arrayContaining([
           expect.objectContaining({
@@ -119,6 +135,12 @@ describe("E2E Agent Execution Chains", () => {
           })
         ])
       });
+
+      // Second call should contain the final response with file content
+      const secondCall = log.calls[1];
+      expect(secondCall.provider).toBe("anthropic");
+      const secondResponseStr = JSON.stringify(secondCall.response).toLowerCase();
+      expect(secondResponseStr).toContain("hello world");
     });
 
     it("should handle API errors gracefully", async () => {

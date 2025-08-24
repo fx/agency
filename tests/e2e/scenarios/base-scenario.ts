@@ -22,8 +22,8 @@ export abstract class BaseScenario {
     logger.startSession(sessionId, this.config.name);
 
     try {
-      const success = await this.runScenario(provider);
-      logger.endSession(success);
+      const { success, finalResponse } = await this.runScenario(provider);
+      logger.endSession(success, undefined, finalResponse);
       return success;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -32,7 +32,7 @@ export abstract class BaseScenario {
     }
   }
 
-  protected abstract runScenario(provider: "anthropic" | "vercel"): Promise<boolean>;
+  protected abstract runScenario(provider: "anthropic" | "vercel"): Promise<{success: boolean, finalResponse?: string}>;
 
   protected getClient(provider: "anthropic" | "vercel") {
     if (provider === "anthropic") {

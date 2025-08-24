@@ -28,6 +28,11 @@ Agency is a TypeScript library that translates LLM message formats between AI pr
 - `npm test anthropic.test.ts` - Run specific test file
 - `npm test -- --reporter=verbose` - Verbose test output
 
+### E2E Testing
+- `npm run test:e2e` - Run E2E tests (requires API keys in .env.local)
+- `VERBOSE=true npm run test:e2e` - Full JSON logs for debugging
+- `npm run test:e2e -- -t "Vercel"` - Run specific E2E test
+
 ## Architecture
 
 ### Core Structure
